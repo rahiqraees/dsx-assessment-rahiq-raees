@@ -1,0 +1,21 @@
+Package: descriptiveStats
+Title: Descriptive Statistics with Careful Edge-Case Handling
+Version: 0.1.0
+Authors@R:
+    person("Rahiq", "Raees", , "rahiqraees10@gmail.com", role = c("aut", "cre"))
+Description: Provides six descriptive statistics helpers (mean, median,
+    mode, first and third quartiles, interquartile range) that validate
+    their inputs and document their behaviour for empty vectors, missing
+    values, ties and single observations.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en-GB
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Depends:
+    R (>= 4.2)
+Imports:
+    stats
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
