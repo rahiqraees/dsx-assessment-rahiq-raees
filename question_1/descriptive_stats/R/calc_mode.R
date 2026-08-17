@@ -1,15 +1,15 @@
 #' Mode (most frequent value)
 #'
-#' Computes the mode of a numeric vector, i.e. the value(s) that occur most
-#' often.
+#' Computes the mode of a numeric vector, that is, the value or values that
+#' occur most often.
 #'
 #' @inheritParams calc_mean
 #'
 #' @details
-#' * **Ties**: when several values share the highest frequency, all of them
-#'   are returned, sorted in ascending order.
-#' * **No mode**: when every value occurs exactly once (and there is more
-#'   than one value) the function returns `NA_real_` and emits a message.
+#' * Ties: when several values share the highest frequency, all of them are
+#'   returned, sorted in ascending order.
+#' * No mode: when every value occurs exactly once (and there is more than one
+#'   value) the function returns `NA_real_` and prints a message.
 #' * A single value is its own mode and is returned unchanged.
 #' * `x` empty (or all `NA` with `na.rm = TRUE`) returns `NA_real_` with a
 #'   warning; `NA` present with `na.rm = FALSE` returns `NA_real_`.

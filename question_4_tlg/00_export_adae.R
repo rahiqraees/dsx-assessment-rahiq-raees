@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Question 4 (prerequisite) - export ADAE to CSV
+# Question 4 (prerequisite): export ADAE to CSV
 # The Python questions (5 and 6) read data/adae.csv.
 # Run from the repository root:  Rscript question_4_tlg/00_export_adae.R
 # ------------------------------------------------------------------------------
@@ -10,8 +10,8 @@ suppressPackageStartupMessages(library(readr))
 dir.create("data", showWarnings = FALSE)
 
 # ---- 2. Export the full ADAE ----------------------------------------------
-# All 107 columns are kept: the downstream Python work selects what it needs.
-# na = "" writes empty cells rather than the literal "NA".
+# All 107 columns are kept; the Python code picks the ones it needs.
+# na = "" writes empty cells instead of the literal "NA".
 adae <- pharmaverseadam::adae
 write_csv(adae, "data/adae.csv", na = "")
 

@@ -1,8 +1,8 @@
-"""Example script: run three example questions through ClinicalTrialDataAgent.
+"""Runs three example questions through ClinicalTrialDataAgent.
 
 Run from the repository root:
     uv run python -m question_6_genai.run_examples
-Set ANTHROPIC_API_KEY to use the real LLM; without it a deterministic mock is used.
+Set ANTHROPIC_API_KEY to use the real LLM. Without it a deterministic mock is used.
 """
 
 from __future__ import annotations

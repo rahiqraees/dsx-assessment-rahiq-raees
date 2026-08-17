@@ -11,7 +11,7 @@ SEVERITY_POINTS: dict[str, int] = {"MILD": 1, "MODERATE": 3, "SEVERE": 5}
 
 
 def severity_points(aesev: object) -> int:
-    """Points for one AE; unknown/missing severities contribute 0."""
+    """Points for one AE. Unknown or missing severities count 0."""
     if aesev is None or pd.isna(aesev):
         return 0
     return SEVERITY_POINTS.get(str(aesev).strip().upper(), 0)
@@ -38,9 +38,9 @@ def compute_risk(df: pd.DataFrame, subject_id: str) -> RiskResponse | None:
 def query_ae(
     df: pd.DataFrame, severity: list[str] | None, treatment_arm: str | None
 ) -> AEQueryResponse:
-    """Filter AE records; every provided filter must match (AND). Null/empty filters are ignored."""
+    """Filter AE records. Every filter that is given must match; null or empty ones are ignored."""
     mask = pd.Series(True, index=df.index)
-    if severity:  # None or [] -> no severity filter
+    if severity:  # None or [] means no severity filter
         wanted = {s.strip().upper() for s in severity}
         mask &= df["AESEV"].astype(str).str.upper().isin(wanted)
     if treatment_arm is not None and treatment_arm.strip() != "":

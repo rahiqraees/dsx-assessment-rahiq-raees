@@ -1,8 +1,8 @@
 #' Validate input for the calc_* functions
 #'
 #' Checks that `x` is a numeric vector and that `na.rm` is a single logical,
-#' then optionally strips missing values. Shared by every exported function so
-#' that error messages are consistent.
+#' then optionally strips missing values. Every exported function calls this,
+#' so the error messages are the same everywhere.
 #'
 #' @param x Object supplied by the caller.
 #' @param na.rm Logical flag supplied by the caller.
@@ -27,8 +27,8 @@ check_input <- function(x, na.rm) {
 
 #' Result for an empty input
 #'
-#' Emits a warning and returns `NA_real_`. Called when `x` has no
-#' (non-missing) values left.
+#' Warns and returns `NA_real_`. Called when `x` has no non-missing values
+#' left.
 #' @return `NA_real_`
 #' @keywords internal
 #' @noRd

@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Question 4.3 - Listing of treatment-emergent adverse events by subject
+# Question 4.3: listing of treatment-emergent adverse events by subject
 # Input : pharmaverseadam::adae (TRTEMFL == "Y")
 # Output: question_4_tlg/output/ae_listings.html
 # Run from the repository root:  Rscript question_4_tlg/03_create_listings.R
@@ -27,8 +27,8 @@ listing_data <- pharmaverseadam::adae %>%
     AENDT = coalesce(format(AENDT, "%Y-%m-%d"), "")   # ongoing events have no end date
   )
 
-# Display copy: show subject id and treatment only on a subject's first row
-# (as in the sample listing), keeping the data copy above for the checks.
+# Display copy: only show the subject id and treatment on a subject's first row,
+# like the sample listing does. The data copy above is kept for the checks.
 listing_display <- listing_data %>%
   mutate(
     first_row = !duplicated(USUBJID),
@@ -38,8 +38,8 @@ listing_display <- listing_data %>%
   select(-first_row)
 
 # ---- 2. gtsummary listing --------------------------------------------------
-# gtsummary 2.5.1 has no tbl_listing(); as_gtsummary() wraps the data frame as-is
-# so every record is printed, and modify_header() supplies the column labels.
+# gtsummary 2.5.1 has no tbl_listing(). as_gtsummary() wraps the data frame as it
+# is, so every record is printed, and modify_header() adds the column labels.
 listing <- as_gtsummary(listing_display) %>%
   modify_header(
     USUBJID ~ "Unique Subject Identifier",
@@ -74,7 +74,7 @@ stopifnot(
   sum(nzchar(listing_display$USUBJID)) == n_distinct(listing_data$USUBJID)
 )
 
-# The rendered HTML really carries the labelled headers and the first record.
+# The rendered HTML contains the labelled headers and the first record.
 html <- paste(readLines(html_path, warn = FALSE), collapse = "\n")
 stopifnot(
   all(vapply(c("Unique Subject Identifier", "Description of Actual Arm",

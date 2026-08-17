@@ -37,7 +37,7 @@ app = FastAPI(
 
 
 def get_adae(request: Request) -> pd.DataFrame:
-    """Dependency returning the loaded ADAE frame (overridden in tests)."""
+    """Dependency that returns the loaded ADAE frame (tests override it)."""
     return request.app.state.adae
 
 
@@ -64,7 +64,7 @@ def subject_risk(
     subject_id: str,
     adae: Annotated[pd.DataFrame, Depends(get_adae)],
 ) -> RiskResponse:
-    """Weighted score: MILD = 1, MODERATE = 3, SEVERE = 5; Low < 5, Medium 5-14, High >= 15."""
+    """Weighted score: MILD = 1, MODERATE = 3, SEVERE = 5. Low < 5, Medium 5 to 14, High >= 15."""
     result = compute_risk(adae, subject_id)
     if result is None:
         raise HTTPException(status_code=404, detail=f"Subject '{subject_id}' not found")

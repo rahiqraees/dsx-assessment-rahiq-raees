@@ -1,4 +1,4 @@
-"""ClinicalTrialDataAgent: natural-language question -> structured intent -> pandas filter."""
+"""ClinicalTrialDataAgent: natural-language question to structured intent to pandas filter."""
 
 from __future__ import annotations
 
@@ -20,10 +20,10 @@ class QueryResult:
 
 
 class ClinicalTrialDataAgent:
-    """Prompt -> Parse -> Execute.
+    """Prompt, parse, execute.
 
-    parse   : ask the LLM (or the mock) which column/value the question refers to
-    execute : apply that filter to the AE DataFrame and return matching subjects
+    parse   asks the LLM (or the mock) which column and value the question is about
+    execute applies that filter to the AE DataFrame and returns the matching subjects
     """
 
     def __init__(self, df: pd.DataFrame, parse: Callable[[str], QueryIntent] | None = None):
@@ -58,6 +58,6 @@ class ClinicalTrialDataAgent:
             subjects=subjects,
         )
 
-    # -- Prompt -> Parse -> Execute -------------------------------------------
+    # -- Prompt, parse, execute in one go --------------------------------------
     def ask(self, question: str) -> QueryResult:
         return self.execute(self.parse(question))

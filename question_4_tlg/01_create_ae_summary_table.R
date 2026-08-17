@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Question 4.1 - Summary table of treatment-emergent adverse events (TEAEs)
+# Question 4.1: summary table of treatment-emergent adverse events (TEAEs)
 # Modelled on FDA Table 10 (pharmaverse cardinal catalogue).
 #
 # Input : pharmaverseadam::adae (TRTEMFL == "Y"), pharmaverseadam::adsl (denominators)
@@ -27,8 +27,9 @@ teae <- adae %>% filter(TRTEMFL == "Y")              # treatment-emergent record
 adsl_saf <- adsl %>% filter(SAFFL == "Y")            # denominators: safety population
 
 # ---- 2. Hierarchical summary (SOC > preferred term) -----------------------
-# tbl_hierarchical() counts distinct USUBJIDs, so a subject with repeat events of
-# the same term is counted once; denominator = the safety population per arm.
+# tbl_hierarchical() counts distinct USUBJIDs, so a subject with several events
+# of the same term is counted once. The denominator is the safety population in
+# each arm.
 tbl <- tbl_hierarchical(
   data        = teae,
   variables   = c(AESOC, AETERM),
@@ -40,7 +41,7 @@ tbl <- tbl_hierarchical(
                      AETERM ~ "Reported Term for the Adverse Event")
 ) %>%
   sort_hierarchical(sort = "descending") %>%          # most frequent first
-  # the overall row carries an internal sentinel label; give it a clinical one
+  # the overall row comes with an internal placeholder label, so give it a proper one
   modify_table_body(~ .x %>%
     mutate(label = if_else(variable == "..ard_hierarchical_overall..",
                            "Treatment Emergent AEs", label))) %>%
@@ -52,11 +53,11 @@ tbl <- tbl_hierarchical(
 body <- tbl$table_body
 
 # ---- 3. Render to gt and indent the preferred terms under their SOC --------
-# gtsummary only pads the AETERM labels with literal spaces, which HTML collapses,
-# so the SOC > term hierarchy would render flat. Apply a real CSS indent instead.
+# gtsummary indents the AETERM labels with plain spaces, which HTML collapses,
+# so the SOC > term hierarchy would come out flat. A real CSS indent fixes that.
 gt_tbl <- as_gt(tbl)
 
-# as_gt() must preserve row order for the row indices below to address the right cells
+# the row indices below only work if as_gt() kept the row order
 stopifnot(identical(gt_tbl[["_data"]]$label, body$label))
 
 term_rows <- which(body$variable == "AETERM")
@@ -91,7 +92,7 @@ stopifnot(identical(hdr$modify_stat_level, as.character(saf_n$ACTARM)),
           identical(as.integer(hdr$modify_stat_n), as.integer(saf_n$n)),
           identical(as.integer(hdr$modify_stat_n), c(86L, 72L, 96L)))
 
-# 5c. The indentation really made it into the rendered HTML (not just leading spaces).
+# 5c. The indent is present in the rendered HTML, not just as leading spaces.
 html <- readLines(html_path, warn = FALSE)
 stopifnot(nrow(gt_tbl[["_styles"]]) == length(term_rows),
           any(grepl("text-indent: 15px", html, fixed = TRUE)))

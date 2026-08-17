@@ -19,9 +19,9 @@
 #' * Non-numeric input raises an error.
 #'
 #' Note: the assessment brief's example lists Q1 = 2.5 and Q3 = 5.5 for
-#' `c(1, 2, 2, 3, 4, 5, 5, 5, 6, 10)`. No standard `quantile()` type
-#' reproduces those values (type 7 gives 2.25 and 5); this package follows
-#' the standard definitions and exposes `type` so callers can choose.
+#' `c(1, 2, 2, 3, 4, 5, 5, 5, 6, 10)`. None of the standard `quantile()` types
+#' give those values (type 7 gives 2.25 and 5), so this package follows the
+#' standard definitions and exposes `type` so callers can pick one.
 #'
 #' @return A numeric scalar.
 #' @examples
@@ -54,7 +54,7 @@ calc_iqr <- function(x, na.rm = FALSE, type = 7) {
   q[2] - q[1]
 }
 
-# Shared implementation for calc_q1 / calc_q3 (not exported).
+# Shared implementation behind calc_q1() and calc_q3() (not exported).
 quartile_impl <- function(x, na.rm, probs, type) {
   x <- check_input(x, na.rm)
   if (length(x) == 0L) return(empty_result())

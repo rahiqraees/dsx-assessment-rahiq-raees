@@ -1,10 +1,10 @@
 # ------------------------------------------------------------------------------
-# Question 2 - SDTM DS (Disposition) domain using {sdtm.oak}
+# Question 2: build the SDTM DS (Disposition) domain with {sdtm.oak}
 #
-# Input : pharmaverseraw::ds_raw  (mock eCRF "Subject Disposition")
-#         question_2_sdtm/study_ct.csv (study controlled terminology, C66727)
-#         pharmaversesdtm::dm (reference start date for study day)
-#         pharmaversesdtm::sv (VISIT -> VISITNUM lookup)
+# Inputs: pharmaverseraw::ds_raw (mock eCRF "Subject Disposition")
+#         question_2_sdtm/study_ct.csv (study controlled terminology, codelist C66727)
+#         pharmaversesdtm::dm (reference start date for the study day)
+#         pharmaversesdtm::sv (VISIT to VISITNUM lookup)
 # Output: question_2_sdtm/output/ds.rds and ds.csv
 #
 # Run from the repository root:  Rscript question_2_sdtm/02_create_ds_domain.R
@@ -20,28 +20,29 @@ out_dir <- "question_2_sdtm/output"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ---- 1. Study controlled terminology --------------------------------------
-# Only codelist C66727 (Completion/Reason for Non-Completion) is required for
-# DSDECOD. The eCRF's collected spellings of four codelist terms ("Completed",
-# "Study Terminated by Sponsor", "Screen Failure", "Lost to Follow-Up") were
-# added to the study CT's term_synonyms (";"-separated) so assign_ct() maps
-# them; only "Randomized", "Final Lab Visit" and "Final Retrieval Visit" fall
-# outside C66727 and are passed through upper-cased by sdtm.oak.
+# Only codelist C66727 (Completion/Reason for Non-Completion) is needed, for
+# DSDECOD. The eCRF spells four of its terms differently ("Completed", "Study
+# Terminated by Sponsor", "Screen Failure", "Lost to Follow-Up"), so those
+# spellings are listed in the study CT's term_synonyms column (";"-separated)
+# and assign_ct() picks them up. "Randomized", "Final Lab Visit" and "Final
+# Retrieval Visit" are not in C66727 at all; sdtm.oak passes them through
+# upper-cased.
 study_ct <- read.csv("question_2_sdtm/study_ct.csv",
                      stringsAsFactors = FALSE, na.strings = "")
 
 # ---- 2. Raw data + oak identifier variables --------------------------------
-# generate_oak_id_vars() adds oak_id / raw_source / patient_number, which every
-# oak mapping function uses to merge the target domain back to the raw rows.
+# generate_oak_id_vars() adds oak_id, raw_source and patient_number. Every oak
+# mapping function uses these to merge the target domain back onto the raw rows.
 #
-# aCRF general notes: the disposition term is collected either as a coded item
-# (IT.DSTERM / IT.DSDECOD) or, for "other" events, as free text in OTHERSP. The
-# two are mutually exclusive, so coalesce() picks whichever is populated.
+# The aCRF general notes say the disposition term is collected either as a coded
+# item (IT.DSTERM / IT.DSDECOD) or, for "other" events, as free text in OTHERSP,
+# never both. So coalesce() just picks whichever one is filled in.
 ds_raw <- pharmaverseraw::ds_raw %>%
   generate_oak_id_vars(pat_var = "PATNUM", raw_src = "ds_raw") %>%
   mutate(
     DSTERM_RAW  = toupper(coalesce(IT.DSTERM, OTHERSP)), # verbatim term, upper-cased as in the pilot study
     DSDECOD_RAW = coalesce(IT.DSDECOD, OTHERSP),         # coded term feeds the CT mapping
-    VISIT_RAW   = toupper(INSTANCE)                      # eCRF visit instance -> VISIT
+    VISIT_RAW   = toupper(INSTANCE)                      # eCRF visit instance becomes VISIT
   )
 
 # ---- 3. Map topic / qualifier variables with sdtm.oak ---------------------
@@ -50,12 +51,12 @@ ds <-
   assign_no_ct(
     raw_dat = ds_raw, raw_var = "DSTERM_RAW", tgt_var = "DSTERM"
   ) %>%
-  # DSDECOD: standardised term via codelist C66727
+  # DSDECOD: standardised term from codelist C66727
   assign_ct(
     raw_dat = ds_raw, raw_var = "DSDECOD_RAW", tgt_var = "DSDECOD",
     ct_spec = study_ct, ct_clst = "C66727"
   ) %>%
-  # DSCAT: category depends on the type of record
+  # DSCAT: the category depends on the type of record
   #   Randomized                    -> PROTOCOL MILESTONE
   #   free-text "other" event       -> OTHER EVENT
   #   any other coded disposition   -> DISPOSITION EVENT
@@ -71,12 +72,12 @@ ds <-
     raw_dat = condition_add(ds_raw, !is.na(IT.DSDECOD) & IT.DSDECOD != "Randomized"),
     raw_var = "IT.DSDECOD", tgt_var = "DSCAT", tgt_val = "DISPOSITION EVENT"
   ) %>%
-  # DSDTC: date/time of collection (DSDTCOL mm-dd-yyyy + DSTMCOL HH:MM)
+  # DSDTC: collection date and time (DSDTCOL is mm-dd-yyyy, DSTMCOL is HH:MM)
   assign_datetime(
     raw_dat = ds_raw, raw_var = c("DSDTCOL", "DSTMCOL"), tgt_var = "DSDTC",
     raw_fmt = list(list("m-d-y"), list("H:M")), .warn = FALSE
   ) %>%
-  # DSSTDTC: start date of the disposition event (IT.DSSTDAT mm-dd-yyyy)
+  # DSSTDTC: start date of the disposition event (IT.DSSTDAT, mm-dd-yyyy)
   assign_datetime(
     raw_dat = ds_raw, raw_var = "IT.DSSTDAT", tgt_var = "DSSTDTC",
     raw_fmt = "m-d-y", .warn = FALSE
@@ -99,11 +100,11 @@ ds <- ds %>%
     DSSTDTC_CHR = DSSTDTC                     # derive_study_day() coerces to Date; keep ISO text
   ) %>%
   left_join(visit_lookup, by = "VISIT") %>%
-  # DSSEQ: sequence within subject, ordered by start date then, for records
-  # collected on the same date, by the eCRF collection order (oak_id) - the
-  # disposition event is always captured before the related "other" event.
+  # DSSEQ: sequence number within subject. Records are ordered by start date,
+  # then by eCRF collection order (oak_id) for records on the same date, since
+  # the disposition event is always captured before its related "other" event.
   derive_seq(tgt_var = "DSSEQ", rec_vars = c("USUBJID", "DSSTDTC", "oak_id")) %>%
-  # DSSTDY: study day relative to DM.RFSTDTC (NA for screen failures, no RFSTDTC)
+  # DSSTDY: study day relative to DM.RFSTDTC (NA for screen failures, who have no RFSTDTC)
   derive_study_day(
     dm_domain = pharmaversesdtm::dm, tgdt = "DSSTDTC", refdt = "RFSTDTC",
     study_day_var = "DSSTDY"

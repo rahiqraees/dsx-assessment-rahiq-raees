@@ -10,7 +10,7 @@
 #' Edge cases:
 #' * `x` empty (or all `NA` with `na.rm = TRUE`) returns `NA_real_` with a
 #'   warning.
-#' * `x` containing `NA` with `na.rm = FALSE` returns `NA_real_` (mirrors
+#' * `x` containing `NA` with `na.rm = FALSE` returns `NA_real_` (same as
 #'   base R).
 #' * A single value is returned unchanged.
 #' * Non-numeric input (character, logical, factor, `NULL`) raises an error.

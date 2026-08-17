@@ -1,10 +1,10 @@
 # ------------------------------------------------------------------------------
-# Question 3 - ADaM ADSL (Subject-Level Analysis Dataset) using {admiral}
+# Question 3: build the ADaM ADSL (Subject-Level Analysis Dataset) with {admiral}
 #
 # Inputs : pharmaversesdtm::dm, vs, ex, ds, ae
 # Output : question_3_adam/output/adsl.rds and adsl.csv
 #
-# Derived variables (per the assessment specification):
+# Variables derived, following the assessment specification:
 #   AGEGR9 / AGEGR9N  age groups "<18" (1), "18 - 50" (2), ">50" (3)
 #   TRTSDTM / TRTSTMF first valid-dose exposure start datetime + time imputation flag
 #   TRTEDTM           last valid-dose exposure end datetime (needed for LSTALVDT)
@@ -32,14 +32,14 @@ ds <- pharmaversesdtm::ds
 ae <- pharmaversesdtm::ae
 
 # ---- 1. Start from DM ------------------------------------------------------
-# ADSL is one record per subject, so DM is the natural skeleton. DOMAIN is an
-# SDTM-only identifier and is not carried into ADaM.
+# ADSL has one record per subject, so DM is the natural starting point. DOMAIN
+# is an SDTM-only variable and does not carry over into ADaM.
 adsl <- dm %>% select(-DOMAIN)
 
 # ---- 2. AGEGR9 / AGEGR9N ---------------------------------------------------
-# Categories of analysis age: <18 -> 1, 18-50 (inclusive) -> 2, >50 -> 3.
-# The conditions are mutually exclusive and cover the whole range, so every
-# subject with a non-missing AGE is classified.
+# Age groups: under 18 is 1, 18 to 50 inclusive is 2, over 50 is 3. The three
+# conditions do not overlap and cover the whole range, so every subject with a
+# non-missing AGE ends up in a group.
 agegr9_lookup <- exprs(
   ~condition,             ~AGEGR9,   ~AGEGR9N,
   AGE < 18,               "<18",     1,
@@ -49,11 +49,11 @@ agegr9_lookup <- exprs(
 adsl <- adsl %>% derive_vars_cat(definition = agegr9_lookup)
 
 # ---- 3. TRTSDTM / TRTSTMF / TRTEDTM ---------------------------------------
-# A valid dose is EXDOSE > 0, or EXDOSE == 0 for a placebo treatment.
-# Only records with a complete date part of EXSTDTC contribute.
-# Missing time is imputed to the first (00:00:00) for the start and to the last
-# (23:59:59) for the end; ignore_seconds_flag keeps a seconds-only imputation
-# from setting the flag, so TRTSTMF is only "H" or "M".
+# A valid dose is EXDOSE > 0, or EXDOSE == 0 on a placebo treatment. Only
+# records with a complete date part in EXSTDTC are used. A missing time is
+# imputed to 00:00:00 for the start and 23:59:59 for the end. ignore_seconds_flag
+# stops a seconds-only imputation from setting the flag, so TRTSTMF is only ever
+# "H" or "M".
 ex_valid <- ex %>%
   filter(
     EXDOSE > 0 | (EXDOSE == 0 & str_detect(EXTRT, "PLACEBO")),
@@ -62,7 +62,7 @@ ex_valid <- ex %>%
   derive_vars_dtm(
     dtc = EXSTDTC, new_vars_prefix = "EXST",
     highest_imputation = "h", time_imputation = "first", # impute missing h/m/s
-    ignore_seconds_flag = TRUE                            # seconds-only -> no flag
+    ignore_seconds_flag = TRUE                            # seconds-only imputation sets no flag
   ) %>%
   derive_vars_dtm(
     dtc = EXENDTC, new_vars_prefix = "EXEN",
@@ -71,14 +71,14 @@ ex_valid <- ex %>%
   )
 
 adsl <- adsl %>%
-  # first exposure in date/time order -> treatment start
+  # first exposure by date/time is the treatment start
   derive_vars_merged(
     dataset_add = ex_valid,
     by_vars = exprs(STUDYID, USUBJID),
     order = exprs(EXSTDTM, EXSEQ), mode = "first",
     new_vars = exprs(TRTSDTM = EXSTDTM, TRTSTMF = EXSTTMF)
   ) %>%
-  # last exposure end -> treatment end (used as the 4th LSTALVDT source)
+  # last exposure end is the treatment end (also the 4th LSTALVDT source)
   derive_vars_merged(
     dataset_add = ex_valid, filter_add = !is.na(EXENDTM),
     by_vars = exprs(STUDYID, USUBJID),
@@ -88,17 +88,17 @@ adsl <- adsl %>%
   derive_vars_dtm_to_dt(source_vars = exprs(TRTSDTM, TRTEDTM))   # TRTSDT, TRTEDT
 
 # ---- 4. ITTFL --------------------------------------------------------------
-# "Y" if the subject has a planned arm (randomised), else "N". The rule is
-# applied literally: in this study ARM is populated for every subject
-# (screen failures carry ARM == "Screen Failure"), so ITTFL is "Y" throughout.
+# "Y" if the subject has a planned arm (was randomised), else "N". The rule is
+# applied as written. In this study ARM is populated for every subject, and
+# screen failures carry ARM == "Screen Failure", so ITTFL is "Y" throughout.
 adsl <- adsl %>% mutate(ITTFL = if_else(!is.na(ARM), "Y", "N"))
 
 # ---- 5. ABNSBPFL -----------------------------------------------------------
-# "Y" if any systolic BP (VSTESTCD == "SYSBP", mmHg) is >= 140 or < 100,
-# else "N". The specification's summary bullet mentions "supine", but its
-# detailed rule applies no position (VSPOS) filter; the detailed rule is what is
-# implemented here, so every SYSBP record is considered regardless of position.
-# Subjects with no qualifying VS record at all also get "N".
+# "Y" if any systolic BP (VSTESTCD == "SYSBP", in mmHg) is 140 or above, or
+# below 100, else "N". The specification's summary bullet mentions "supine", but
+# the detailed rule has no position (VSPOS) filter, so I followed the detailed
+# rule and every SYSBP record counts regardless of position. Subjects with no
+# qualifying VS record at all get "N" too.
 adsl <- adsl %>%
   derive_var_merged_exist_flag(
     dataset_add = vs,
@@ -110,14 +110,14 @@ adsl <- adsl %>%
   )
 
 # ---- 6. LSTALVDT -----------------------------------------------------------
-# Latest of: (1) complete VS date with a valid result, (2) complete AE start
-# date, (3) complete DS start date, (4) date part of last treatment (TRTEDT).
-# Partial dates must never contribute, so each DTC-based event is restricted to
-# a complete YYYY-MM-DD date (nchar >= 10) in its condition. The guard is on the
-# condition, not just on convert_dtc_to_dt(): an unguarded partial date would
-# yield an NA LSTALVDT, and because the events are ranked by
-# order = exprs(LSTALVDT, seq, event_nr) with mode = "last" (NA sorts last), a
-# single partial date would be selected and wipe out the subject's real date.
+# Latest of: (1) a complete VS date with a valid result, (2) a complete AE start
+# date, (3) a complete DS start date, (4) the date part of the last treatment
+# (TRTEDT). Partial dates must never contribute, so each DTC-based event is
+# limited to complete YYYY-MM-DD dates (nchar >= 10) in its condition. The check
+# has to be in the condition and not only in convert_dtc_to_dt(): a partial date
+# would convert to NA, and since the events are ranked by
+# order = exprs(LSTALVDT, seq, event_nr) with mode = "last" (NA sorts last), that
+# one partial date would win and wipe out the subject's real date.
 adsl <- adsl %>%
   derive_vars_extreme_event(
     by_vars = exprs(STUDYID, USUBJID),
@@ -142,8 +142,8 @@ adsl <- adsl %>%
   )
 
 # ---- 7. CARPOPFL -----------------------------------------------------------
-# "Y" if any AE with system organ class CARDIAC DISORDERS, otherwise missing
-# (the flag is only ever populated when the condition is met).
+# "Y" if the subject has any AE in system organ class CARDIAC DISORDERS,
+# otherwise missing. The flag is only populated when the condition is met.
 adsl <- adsl %>%
   derive_var_merged_exist_flag(
     dataset_add = ae,
@@ -166,16 +166,16 @@ stopifnot(
   all(is.na(adsl$TRTSDTM) | adsl$ITTFL == "Y"),
   # every subject has at least one complete date across VS / AE / DS / treatment
   !anyNA(adsl$LSTALVDT),
-  # a subject cannot be last known alive before the end of their treatment
+  # nobody can be last known alive before their treatment ended
   all(is.na(adsl$TRTEDT) | adsl$LSTALVDT >= adsl$TRTEDT)
 )
 
 # ---- 9. Save ---------------------------------------------------------------
 saveRDS(adsl, file.path(out_dir, "adsl.rds"))
 
-# write.csv() drops the time part of a POSIXct when it is midnight, so the
-# datetime columns are formatted as ISO 8601 for the CSV only; the RDS keeps
-# the native POSIXct values.
+# write.csv() drops the time part of a POSIXct when it is midnight, so for the
+# CSV the datetime columns are written as ISO 8601 text. The RDS keeps the
+# native POSIXct values.
 adsl_csv <- adsl %>%
   mutate(across(where(~ inherits(.x, "POSIXct")), ~ format(.x, "%Y-%m-%dT%H:%M:%S")))
 write.csv(adsl_csv, file.path(out_dir, "adsl.csv"), row.names = FALSE, na = "")

@@ -1,12 +1,12 @@
 # install_r_packages.R
-# Installs every CRAN package used by questions 1-4. Run once from the repo root:
+# Installs the CRAN packages used in questions 1 to 4. Run it once from the repo root:
 #   Rscript install_r_packages.R
 pkgs <- c(
   # tidyverse / utilities
   "dplyr", "tidyr", "stringr", "readr", "purrr", "tibble", "lubridate",
   # pharmaverse
   "admiral", "sdtm.oak", "pharmaverseraw", "pharmaversesdtm", "pharmaverseadam",
-  # tables & graphics
+  # tables and graphics
   "gtsummary", "gt", "ggplot2",
   # package development
   "devtools", "roxygen2", "testthat", "usethis"

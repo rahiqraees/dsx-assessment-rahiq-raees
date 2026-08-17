@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Question 4.2 - Adverse event visualisations with {ggplot2}
+# Question 4.2: adverse event visualisations with {ggplot2}
 #   Plot 1: AE severity distribution by treatment arm (stacked bar)
 #   Plot 2: Top 10 most frequent AEs with 95% Clopper-Pearson CIs for the
 #           percentage of subjects affected
@@ -37,7 +37,8 @@ ggsave(file.path(out_dir, "ae_severity_by_treatment.png"), p1,
        width = 8, height = 5, dpi = 150, bg = "white")
 
 # ---- Plot 2: top 10 AEs with Clopper-Pearson 95% CI -----------------------
-# Incidence = subjects with >= 1 TEAE of that term / all subjects with a TEAE.
+# Incidence is the number of subjects with at least one TEAE of that term,
+# divided by all subjects with any TEAE.
 n_subj <- n_distinct(teae$USUBJID)
 
 top10 <- teae %>%
@@ -77,7 +78,7 @@ stopifnot(
   file.exists(file.path(out_dir, "top10_ae_incidence.png")),
   nrow(top10) == 10,
   as.character(top10$AETERM[1]) == "PRURITUS",   # most frequent term
-  levels(top10$AETERM)[10] == "PRURITUS"         # ... so it is the top row of the plot
+  levels(top10$AETERM)[10] == "PRURITUS"         # and therefore the top row of the plot
 )
 cat("Saved two PNG files to", out_dir, "\n")
 print(top10 %>% select(AETERM, n_subj_ae, pct, lower, upper))

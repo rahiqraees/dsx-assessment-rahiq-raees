@@ -23,7 +23,7 @@ Edge cases:
 \itemize{
 \item \code{x} empty (or all \code{NA} with \code{na.rm = TRUE}) returns \code{NA_real_} with a
 warning.
-\item \code{x} containing \code{NA} with \code{na.rm = FALSE} returns \code{NA_real_} (mirrors
+\item \code{x} containing \code{NA} with \code{na.rm = FALSE} returns \code{NA_real_} (same as
 base R).
 \item A single value is returned unchanged.
 \item Non-numeric input (character, logical, factor, \code{NULL}) raises an error.

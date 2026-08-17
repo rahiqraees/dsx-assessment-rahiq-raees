@@ -43,9 +43,9 @@ warning.
 }
 
 Note: the assessment brief's example lists Q1 = 2.5 and Q3 = 5.5 for
-\code{c(1, 2, 2, 3, 4, 5, 5, 5, 6, 10)}. No standard \code{quantile()} type
-reproduces those values (type 7 gives 2.25 and 5); this package follows
-the standard definitions and exposes \code{type} so callers can choose.
+\code{c(1, 2, 2, 3, 4, 5, 5, 5, 6, 10)}. None of the standard \code{quantile()} types
+give those values (type 7 gives 2.25 and 5), so this package follows the
+standard definitions and exposes \code{type} so callers can pick one.
 }
 \examples{
 data <- c(1, 2, 2, 3, 4, 5, 5, 5, 6, 10)

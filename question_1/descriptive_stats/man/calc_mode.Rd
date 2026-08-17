@@ -16,15 +16,15 @@ Defaults to \code{FALSE}.}
 A numeric vector of length one or more (ties), or \code{NA_real_}.
 }
 \description{
-Computes the mode of a numeric vector, i.e. the value(s) that occur most
-often.
+Computes the mode of a numeric vector, that is, the value or values that
+occur most often.
 }
 \details{
 \itemize{
-\item \strong{Ties}: when several values share the highest frequency, all of them
-are returned, sorted in ascending order.
-\item \strong{No mode}: when every value occurs exactly once (and there is more
-than one value) the function returns \code{NA_real_} and emits a message.
+\item Ties: when several values share the highest frequency, all of them are
+returned, sorted in ascending order.
+\item No mode: when every value occurs exactly once (and there is more than one
+value) the function returns \code{NA_real_} and prints a message.
 \item A single value is its own mode and is returned unchanged.
 \item \code{x} empty (or all \code{NA} with \code{na.rm = TRUE}) returns \code{NA_real_} with a
 warning; \code{NA} present with \code{na.rm = FALSE} returns \code{NA_real_}.

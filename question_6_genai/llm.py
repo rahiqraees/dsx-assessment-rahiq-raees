@@ -1,10 +1,10 @@
 """LLM backends that turn a natural-language question into a structured QueryIntent.
 
-Two implementations share one interface (`invoke(question) -> QueryIntent`):
-  * AnthropicLLM - LangChain `ChatAnthropic` with structured output (used when
-    ANTHROPIC_API_KEY is set).
-  * MockLLM      - deterministic keyword rules, so the full
-    Prompt -> Parse -> Execute flow runs without any API key.
+Both implementations share one interface, `invoke(question) -> QueryIntent`:
+  * AnthropicLLM uses LangChain's `ChatAnthropic` with structured output. It is
+    used when ANTHROPIC_API_KEY is set.
+  * MockLLM uses deterministic keyword rules, so the full prompt, parse and
+    execute flow runs without any API key.
 """
 
 from __future__ import annotations
@@ -127,9 +127,9 @@ class MockLLM:
             return QueryIntent(target_column="ACTARM", filter_value="Placebo")
 
         for soc in self._socs:  # body systems -> AESOC via the SOC's first word
-            # Split on comma too: SOCs like 'RESPIRATORY, THORACIC ...' would otherwise
-            # yield a head of 'RESPIRATORY,' that can never match prose. The trailing \b
-            # keeps 'EAR' from matching 'EARLY' and 'SKIN' from matching 'SKINFOLD'.
+            # Split on commas as well as spaces. SOCs like 'RESPIRATORY, THORACIC ...'
+            # would otherwise give a head of 'RESPIRATORY,' that never matches prose.
+            # The trailing \b stops 'EAR' matching 'EARLY' and 'SKIN' matching 'SKINFOLD'.
             head = re.split(r"[\s,]", soc)[0]
             if re.search(rf"\b{re.escape(head)}\b", upper):
                 return QueryIntent(target_column="AESOC", filter_value=soc)
@@ -139,7 +139,7 @@ class MockLLM:
                 if re.search(rf"\b{rel}\b", upper):
                     return QueryIntent(target_column="AEREL", filter_value=rel)
 
-        # Otherwise treat the remaining content words as a condition name -> AETERM
+        # Otherwise treat whatever content words are left as a condition name (AETERM)
         words = [
             w for w in re.findall(r"[A-Za-z][A-Za-z\-']*", text) if w.lower() not in self._STOPWORDS
         ]
@@ -148,7 +148,7 @@ class MockLLM:
 
 
 class AnthropicLLM:
-    """LangChain ChatAnthropic wrapper producing QueryIntent via structured output."""
+    """Wrapper around LangChain's ChatAnthropic that returns a QueryIntent via structured output."""
 
     def __init__(self, df: pd.DataFrame, model: str = MODEL_ID):
         from langchain_anthropic import ChatAnthropic
@@ -157,10 +157,10 @@ class AnthropicLLM:
         self._system = SYSTEM_PROMPT.format(schema=build_schema_prompt(df))
         self._HumanMessage = HumanMessage
         self._SystemMessage = SystemMessage
-        # No `temperature` (rejected by this model). Thinking is left at the model
-        # default (adaptive) with low effort; structured output uses Anthropic's native
+        # No `temperature`, this model rejects it. Thinking stays at the model default
+        # (adaptive) with low effort. Structured output goes through Anthropic's native
         # `output_config.format` (json_schema mode) rather than a forced tool call, which
-        # keeps it compatible with thinking and avoids the disabled-thinking failure modes.
+        # works alongside thinking and avoids the failure modes of switching it off.
         chat = ChatAnthropic(model=model, max_tokens=1024, output_config={"effort": "low"})
         self._chain = chat.with_structured_output(QueryIntent, method="json_schema")
 
@@ -174,7 +174,7 @@ class AnthropicLLM:
 
 
 def build_llm(df: pd.DataFrame) -> tuple[Callable[[str], QueryIntent], str]:
-    """Return (parse_fn, backend_name). Uses Anthropic when a key is present, else the mock."""
+    """Return (parse_fn, backend_name). Anthropic when a key is present, otherwise the mock."""
     if os.environ.get("ANTHROPIC_API_KEY"):
         return AnthropicLLM(df).invoke, "anthropic"
     return MockLLM(df).invoke, "mock"
