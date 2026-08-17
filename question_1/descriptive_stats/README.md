@@ -1,8 +1,8 @@
 # descriptiveStats
 
-A small R package implementing six descriptive statistics functions with
-explicit, documented handling of edge cases. Built for Question 1 of the DSX
-Data Scientist coding assessment.
+A small R package with six descriptive statistics functions and clearly
+documented handling of edge cases. Written for Question 1 of the DSX Data
+Scientist coding assessment.
 
 ## Installation
 
@@ -37,26 +37,26 @@ calc_q3(data)      # 5
 calc_iqr(data)     # 2.75
 ```
 
-## Edge-case behaviour
+## Edge cases
 
-| Situation | Behaviour |
+| Situation | What happens |
 |---|---|
 | Non-numeric `x` (character, logical, factor, list, `NULL`) | error: `` `x` must be a numeric vector, not <class>. `` |
 | `na.rm` not a single `TRUE`/`FALSE` | error |
-| Empty vector, or all `NA` with `na.rm = TRUE` | warning + `NA_real_` |
-| `NA` present and `na.rm = FALSE` | `NA_real_` (mirrors base R) |
+| Empty vector, or all `NA` with `na.rm = TRUE` | warning, returns `NA_real_` |
+| `NA` present and `na.rm = FALSE` | `NA_real_` (same as base R) |
 | Single value | returned unchanged (`calc_iqr()` returns 0) |
 | Ties in `calc_mode()` | all tied values, sorted ascending |
-| No mode (every value unique) | message + `NA_real_` |
+| No mode (every value unique) | message, returns `NA_real_` |
 
 ## Note on the assessment example
 
 The brief lists `calc_mean(data) # 3.3`, `calc_q1(data) # 2.5` and
-`calc_q3(data) # 5.5` for the vector above. The arithmetic mean of that
-vector is 4.3, and no standard quantile definition (`stats::quantile()`
-types 1–9) yields 2.5 / 5.5. This package implements the standard
-definitions (median 4.5 and mode 5 match the brief) and exposes the `type`
-argument so any of the nine textbook quantile algorithms can be selected.
+`calc_q3(data) # 5.5` for the vector above. The arithmetic mean of that vector
+is 4.3, and none of the standard quantile definitions (`stats::quantile()`
+types 1 to 9) give 2.5 and 5.5. So this package implements the standard
+definitions (median 4.5 and mode 5 do match the brief) and exposes the `type`
+argument, so any of the nine textbook quantile algorithms can be chosen.
 
 ## Development
 
